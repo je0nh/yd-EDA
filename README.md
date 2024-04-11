@@ -161,3 +161,124 @@
      ```
      ![output](https://github.com/je0nh/yd-edapj/assets/145730125/9b773a5b-74b0-4f8a-ae91-dd6cc696896d)
 
+   - 월별 제공되는 쿠폰수
+     - 판매량이 많은 달에 쿠폰을 얼만큼 제공했는지 알기위해 분석
+       ```python
+       # 월별로 쿠폰의 종류수 확인
+       df_coupon = df.groupby(['월', '쿠폰이름']).size().reset_index(name='쿠폰수')
+       df_coupon = df_coupon[df_coupon['쿠폰이름'] != '-'][['월','쿠폰이름']].groupby('월').count()
+
+       # 월별 실거래금액
+       df_month = df.groupby('월')['실거래금액'].sum().reset_index(name='실거래금액')
+       df_month = df_month.reset_index(drop=True)
+       
+       combined_df = pd.merge(df_coupon, df_month, on='월')
+       combined_df.columns = ['월', '월별 쿠폰종류수', '월별 실거래금액 총합계']
+       ```
+       ![output](https://github.com/je0nh/yd-edapj/assets/145730125/23365918-9ed8-4c22-8ff9-5f0966e6f94f)
+
+    - 시간에 따른 판매 가격 변화
+      ```python
+      # 가장 판매가 많은 상품
+      df.groupby('코스(상품) 이름').size().reset_index(name='판매량').sort_values(by='판매량', ascending=False).head(10)
+
+      # 첫번째 가격과 마지막 가격의 차이를 보여주는 표
+      df_grouped = df.groupby(['코스(상품) 이름']).agg({'거래일자': ['first', 'last'], '판매가격': ['first', 'last']}).reset_index()
+      df_grouped.columns = ['코스(상품) 이름', '마지막 거래일자', '첫번째 거래일자', '마지막 판매가격', '첫번째 판매가격']
+
+      # 가장 큰 판매가격 차이를 보이는 상품
+      max_price_difference_row = df_grouped.loc[df_grouped['마지막 판매가격'] - df_grouped['첫번째 판매가격'] == (df_grouped['마지막 판매가격'] - df_grouped['첫번째 판매가격']).max()].reset_index()
+
+      df_allinone = df[df['코스(상품) 이름'].str.contains('초격차 패키지 : 일잘러 필수 스킬 모음.zip')]
+      df_allinone = df_allinone[['거래일자', '판매가격']]
+      df_allinone = df_allinone.groupby('거래일자').mean().reset_index()
+      df_allinone['거래일자'] = pd.to_datetime(df_allinone['거래일자'])
+      df_allinone = df_allinone.sort_values(by='거래일자', ascending=True)
+      ```
+      ![output](https://github.com/je0nh/yd-edapj/assets/145730125/64e47a92-b810-4791-9b72-9b2fd4a2d070)
+
+4. 매출 상위 20%에 해당하는 고객군과 나머지 고객군 간의 비교분석
+   - 매출 상위 20%에 해당하는 고객군 분류
+     ```python
+     df_modi = df[['고객id', '카테고리', '코스(상품) 이름', '판매가격', '실거래금액', '쿠폰할인액', '거래금액', '쿠폰유무']]
+
+     df_modi['row_count'] = 1
+     df_modi = df_modi.sort_values(by='실거래금액', ascending=False)
+
+     # 고객id 그룹 및 실거래금액순 정렬
+     top_count_id = df_modi.groupby('고객id').sum('실거래금액').reset_index().sort_values(by='실거래금액', ascending=False)
+     top_20_df = top_count_id.head(len(top_count_id)//5)
+
+     print('상위 20% 고객 정보')
+     # 상위 20% 고객의 수
+     print(' - 고객 수:', len(top_20_df))
+      
+     # 상위 20% 총매출
+     print(' - 총매출:', '{:,.0f} 원'.format(top_20_df['실거래금액'].sum()))
+      
+     # 상위 20% 고객의 총매출이 전체 매출에서 차지하는 비율
+     print(' - 총매출이 전체 매출에서 차지하는 비율:', round(top_20_df['실거래금액'].sum() / df['실거래금액'].sum(),4) * 100, '%')
+      
+     # 상위 20% 고객의 평균 거래횟수
+     print(' - 평균 거래횟수:', round(top_20_df['row_count'].mean(),2), '회')
+      
+     # 상위 20% 고객의 평균 실거래금액, 원으로 표현
+     print(' - 평균 실거래금액:', '{:,.0f} 원'.format(round(top_20_df['실거래금액'].mean())))
+      
+     # 상위 20% 고객의 한 사람당 평균 쿠폰 이용 건수
+     print(' - 한사람당 평균 쿠폰 이용 건수:', round(top_20_df['쿠폰유무'].mean(),2), '건')
+      
+     # 상위 20% 고객이 쿠폰으로 할인되는 금액의 비율
+     print(' - 쿠폰으로 할인되는 금액의 비율:', round(top_20_df['쿠폰할인액'].sum() / top_20_df['판매가격'].sum(),4) * 100, '%')
+      
+     # 상위 20% 고객의 평균 쿠폰 할인액, 원으로 표현
+     print(' - 평균 쿠폰 할인액:', '{:,.0f} 원'.format(round(top_20_df['쿠폰할인액'].mean())))
+
+     # 그 외 80% 고객 정보
+     print('상위 20% 고객을 제외한 나머지 80% 고객 정보')
+
+     # 나머지 80% 고객의 수
+     print(' - 고객 수:', len(df) - len(top_20_df))
+      
+     # 나머지 80% 고객의 총매출
+     print(' - 총매출:', '{:,.0f} 원'.format(df['실거래금액'].sum() - top_20_df['실거래금액'].sum()))
+      
+     # 나머지 80% 고객의 총매출이 전체 매출에서 차지하는 비율
+     print(' - 총매출이 전체 매출에서 차지하는 비율:', round((df['실거래금액'].sum() - top_20_df['실거래금액'].sum()) / df['실거래금액'].sum(),4) * 100, '%')
+      
+     # 나머지 80% 고객의 평균 거래횟수
+     print(' - 평균 거래횟수:', round((len(df) - top_20_df['row_count'].sum()) / (len(df.groupby('고객id')) - len(top_20_df)),2), '회')
+      
+     # 나머지 80% 고객의 평균 실거래금액, 원으로 표현
+     print(' - 평균 실거래금액:', '{:,.0f} 원'.format(round((df['실거래금액'].sum() - top_20_df['실거래금액'].sum()) / (len(df.groupby('고객id')) - len(top_20_df)))))
+      
+     # 80% 고객의 한사람당 평균 쿠폰 이용 건수
+     print(' - 한사람당 평균 쿠폰 이용 건수:', round((df['쿠폰유무'].sum() - top_20_df['쿠폰유무'].sum()) / (len(df.groupby('고객id')) - len(top_20_df))), '건')
+      
+     # 80% 고객이 쿠폰으로 할인되는 금액의 비율
+     print(' - 쿠폰으로 할인되는 금액의 비율:', round((df['쿠폰할인액'].sum() - top_20_df['쿠폰할인액'].sum()) / (df['판매가격'].sum() - top_20_df['판매가격'].sum()), 4) * 100, '%')
+      
+     # 80% 고객의 평균 쿠폰 할인액, 원으로 표현
+     print(' - 평균 쿠폰 할인액:', '{:,.0f} 원'.format(round((df['쿠폰할인액'].sum() - top_20_df['쿠폰할인액'].sum()) / (len(df.groupby('고객id')) - len(top_20_df)))))
+     
+     # 실거래금액 상위 20퍼센트 고객 구하기
+     top_20 = df_modi.groupby('고객id')['실거래금액'].sum().sort_values(ascending=False).head(int(len(df_modi.groupby('고객id'))*0.2))
+     top_20_customer = list(top_20.index)
+     top_20_df = df[df['고객id'].isin(top_20_customer)]
+     top_20_group = top_20_df.groupby(['고객id', '카테고리'])['실거래금액'].sum().reset_index(name='거래금액합')
+      top_20_category_sum = top_20_group.groupby('카테고리')['거래금액합'].sum()
+
+     # 실거래금액 상위 80퍼센트 고객 구하기
+     top_80 = df_modi.groupby('고객id')['실거래금액'].sum().sort_values(ascending=False).tail(int(len(df_modi) - int(len(df_modi.groupby('고객id'))*0.2)))
+     top_80_customer = list(top_80.index)
+     top_80_df = df[df['고객id'].isin(top_80_customer)]
+     top_80_group = top_80_df.groupby(['고객id', '카테고리'])['실거래금액'].sum().reset_index(name='거래금액합')
+     top_80_category_sum = top_80_group.groupby('카테고리')['거래금액합'].sum()
+     ```
+     ![output](https://github.com/je0nh/yd-edapj/assets/145730125/f4fdc853-48c6-4c61-9281-89ff0e6800cd)
+
+5. 쿠폰 종류별 분류 및 구매 내역간의 상관관계 분석
+
+
+
+
