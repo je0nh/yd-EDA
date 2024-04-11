@@ -340,7 +340,7 @@
       df_purchase_counts = df.groupby('고객id').size().reset_index(name='거래횟수')
       ```
 
-    - 재구매 고객들의 첫 구매 리스트 추출
+    - 재구매 고객들의 **첫 구매** 리스트 추출
       ```python
       # 재구매 고객들의 첫구매 리스트
       repurchase = df_purchase_counts[df_purchase_counts['거래횟수'] > 1]
@@ -358,12 +358,12 @@
       first_free_df = first_df[first_df['쿠폰 분류'] == '무료수강권']
       ```
 
-    - 2회 이상 구매한 고객 중 첫구매로 기타 쿠폰을 사용한 고객
+    - 2회 이상 구매한 고객 중 첫구매로 `기타 쿠폰`을 사용한 고객
       ```python
       first_etc_df = first_df[first_df['쿠폰 분류'] == '기타']
       ```
 
-    - 2회 이상 구매한 고객들 중 첫 구매에 쿠폰을 사용하지 않은 사람들
+    - 2회 이상 구매한 고객들 중 첫 구매에 **쿠폰을 사용하지 않은** 사람들
       ```python
       first_no_coupon_df = first_df[first_df['쿠폰 분류'] == '-']
       ```
