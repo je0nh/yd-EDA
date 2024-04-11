@@ -266,7 +266,7 @@
      top_20_customer = list(top_20.index)
      top_20_df = df[df['고객id'].isin(top_20_customer)]
      top_20_group = top_20_df.groupby(['고객id', '카테고리'])['실거래금액'].sum().reset_index(name='거래금액합')
-      top_20_category_sum = top_20_group.groupby('카테고리')['거래금액합'].sum()
+     top_20_category_sum = top_20_group.groupby('카테고리')['거래금액합'].sum()
 
      # 실거래금액 상위 80퍼센트 고객 구하기
      top_80 = df_modi.groupby('고객id')['실거래금액'].sum().sort_values(ascending=False).tail(int(len(df_modi) - int(len(df_modi.groupby('고객id'))*0.2)))
