@@ -96,6 +96,68 @@
      ```
      ![output](https://github.com/je0nh/yd-edapj/assets/145730125/6fa6d202-4889-417b-8d68-92b919e1da4b)
 
-     
+     ![output](https://github.com/je0nh/yd-edapj/assets/145730125/c822aa39-f817-4b18-9a70-3e688f86d7ed)
 
+2. 카테고리별 판매량 조사 및 분석
+   - 카테고리별 판매량과 매출분석을 위해 `REFUND` 값 제거
+     ```python
+     # '유형' 컬럼에서 'REFUND' 제거
+     df = df[df['유형'] != 'REFUND']
+
+     # 카테고리별 판매량
+     df_category_sales = df.groupby('카테고리').size().reset_index(name='판매량').sort_values(by='판매량', ascending=False).set_index('카테고리')
+
+     # 카테고리별 총매출
+     df_category_amount = df.groupby('카테고리')['실거래금액'].sum().reset_index(name='총매출').set_index('카테고리').sort_values('총매출', ascending=False)
+
+     # 카테고리별 평균 실거래금액
+     df_category_avg_amount = df.groupby('카테고리')['실거래금액'].mean().reset_index(name='평균실거래금액').set_index('카테고리').sort_values('평균실거래금액', ascending=False).astype(int)
+
+     # 카테고리별 상품수 대비 평균 실거래금액
+     df_category_amount_sum = df.groupby('카테고리')['실거래금액'].sum()
+     df_category_course_amount = df.groupby('카테고리')['코스ID'].nunique()
+
+     df_category_course_avg_amount = (df_category_amount_sum / df_category_course_amount).reset_index(name='상품수 대비 평균실거래금액').set_index('카테고리').sort_values('상품수 대비 평균실거래금액', ascending=False).astype(int)
+
+    ![output](https://github.com/je0nh/yd-edapj/assets/145730125/7904ba24-e212-4572-af76-dc0532632c93)
+
+3. 거래 일자에 따른 판매량 조사 및 상관관계 분석
+   - 월별, 요일별, 시간별 판매수량에 대해 분석
+     ```python
+     # 요일별 컬럼 생성
+     df['요일'] = df['거래일자'].dt.day_name()
+
+     # 시간별 컬럼 생성
+     df['시'] = df['거래일자'].dt.hour
+
+     # 월별 판매수량
+     df_month = df.groupby('월').size().reset_index(name='판매 수량').set_index('월')
+
+     # 요일별 판매수량
+     df_week = df.groupby('요일').size().reset_index(name='판매 수량').set_index('요일').sort_values('판매 수량', ascending=False)
+
+     # 시간별 판매수량
+     df_time = df.groupby('시').size().reset_index(name='판매 수량').set_index('시')
+     ```
+     ![output](https://github.com/je0nh/yd-edapj/assets/145730125/7c43cc60-d44b-47aa-bf83-50c9d665bd0f)
+
+   - 쿠폰 사용 여부에 따른 판매량 차이 분석
+     ```python
+     # '쿠폰 유무' 컬럼 생성에서 '쿠폰이름'에 '-'값이 없으면 1, 있으면 0을 넣어줌
+     df['쿠폰유무'] = df['쿠폰이름'].apply(lambda x: 1 if '-' not in x else 0)
+
+     # 쿠폰 유무에 따른 월별 판매량을 보여주는 피벗 테이블
+     coup_monsale = df.groupby(['쿠폰유무','월']).size().reset_index(name='판매량')
+     coup_monsale_pivot = coup_monsale.pivot(index='월', columns='쿠폰유무', values='판매량')
+     coup_monsale_pivot['total'] = coup_monsale_pivot[0] + coup_monsale_pivot[1]
+
+     # 쿠폰 유무에 따른 요일별 판매량을 보여주는 피벗 테이블
+     weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+     coup_daysale = df.groupby(['쿠폰유무','요일']).size().reset_index(name='판매량')
+     coup_daysale_pivot = coup_daysale.pivot(index='요일', columns='쿠폰유무', values='판매량')
+     coup_daysale_pivot = coup_daysale_pivot.reindex(weekday_order)
+     coup_daysale_pivot['total'] = coup_daysale_pivot[0] + coup_daysale_pivot[1]
+     ```
+     ![output](https://github.com/je0nh/yd-edapj/assets/145730125/9b773a5b-74b0-4f8a-ae91-dd6cc696896d)
 
