@@ -278,7 +278,61 @@
      ![output](https://github.com/je0nh/yd-edapj/assets/145730125/f4fdc853-48c6-4c61-9281-89ff0e6800cd)
 
 5. 쿠폰 종류별 분류 및 구매 내역간의 상관관계 분석
+- 쿠폰 종류별 효과 분석
+  - `PROMOTION`으로 할인을 많이 받은 고객은 `무료수강권`으로, 나머지는 `기타`로 쿠폰 종류를 분류
+  - 재구매 고객 중 종류에 따라 어떤 차이가 있는지 확인
+    ```python
+    import re
+    
+    # 쿠폰 이름만 가져오기 (.unique로 중복제거)
+    coup_list = list(df['쿠폰이름'].unique())
+    category_coup = []
+    category_coups = []
+    
+    for i in range(len(coup_list)):
+        try:
+            result = re.findall('\[(.*?)\]', coup_list[i]) # 특수문자 제거
+            if result:  # Check if the result is not empty
+                category_coup.append('[' + result[0] + ']')
+                category_coups.append(result[0])
+        except TypeError: # NaN 값을 pass
+            pass
+                
+    coup_list = sorted(list(set(category_coup)))
+    coup_lists = sorted(list(set(category_coups)))
+    
+    # coup_dic으로 딕셔너리 생성
+    coup_dic = {name:value for name, value in zip(coup_list, coup_lists)}
+    
+    # 쿠폰이름에 coup_dic의 해당하는 name이 있을 경우 value를 df['쿠폰 종류']이라는 column에 저장
+    def check_coup(row):
+        name = row['쿠폰이름']
+        for pattern, value in coup_dic.items():
+            if pattern in str(name):
+                return value
+        return ''
+    
+    df['쿠폰 종류'] = df.apply(check_coup, axis=1)
 
+    df.reset_index(drop=True, inplace=True)
+
+    # 결제 수단이 'PROMOTION'인 경우 '쿠폰 분류' 컬럼에 를 '무료수강권'으로 저장
+    
+    coupon_sort = []
+    
+    for i in range(len(df)):
+        if df.loc[i,'쿠폰이름'] != '-' and df.loc[i,'결제수단'] == 'PROMOTION':
+            coupon_sort.append('무료수강권')
+        elif df.loc[i,'쿠폰이름'] != '-' and df.loc[i,'결제수단'] != 'PROMOTION':
+            coupon_sort.append('기타')
+        else:
+            coupon_sort.append('-')
+    
+    df['쿠폰 분류'] = coupon_sort
+
+    # '쿠폰 종류' 컬럼 제거
+    df.drop('쿠폰 종류', axis=1, inplace=True)
+    ```
 
 
 
