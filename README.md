@@ -69,7 +69,6 @@
      # 관계 분석한 자료를 기준으로 heatmap 그래프를 통해 시각화
      sns.heatmap(data = df_category_corr, annot = True, cmap='Blues')
      ```
-     <img width="250" alt="Screenshot 2024-04-11 at 6 48 55 PM" src="https://github.com/je0nh/yd-edapj/assets/145730125/48f352bb-3ea6-4024-84a8-ea5ca02db179">
      
      ![output](https://github.com/je0nh/yd-edapj/assets/145730125/9812cfb1-ef85-46ec-9612-0d91009fb888)
 
