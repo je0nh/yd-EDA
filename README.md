@@ -1,5 +1,5 @@
 # FASTCAMPUS EDA
-- 프로젝트 기간
+- 프로젝트 기간: 
 - 프로젝트 인원: 5명
   |이름|담당 역할|
   |---|---|
@@ -334,5 +334,82 @@
     df.drop('쿠폰 종류', axis=1, inplace=True)
     ```
 
+  - 고객별 첫 구매 리스트
+    - 재구매 고객군과 첫 구매 고객군 구분
+      ```python
+      df_purchase_counts = df.groupby('고객id').size().reset_index(name='거래횟수')
+      ```
+
+    - 재구매 고객들의 첫 구매 리스트 추출
+      ```python
+      # 재구매 고객들의 첫구매 리스트
+      repurchase = df_purchase_counts[df_purchase_counts['거래횟수'] > 1]
+      repurchase_customer = list(repurchase['고객id'])
+      repurchase_df = df[df['고객id'].isin(repurchase_customer)]
+      repurchase_df = repurchase_df.sort_values(by=['고객id', '거래일자'])
+      repurchase_df = repurchase_df.reset_index(drop=True)
+
+      first_df = repurchase_df.drop_duplicates(subset=['고객id'], keep='first')
+      first_df = first_df[['고객id', '코스(상품) 이름', '거래일자','쿠폰이름', '쿠폰 분류', '판매가격','쿠폰할인액', '실거래금액']]
+      ```
+
+    - 2회 이상 구매한 고객 중 첫 구매로 `무료수강권` 쿠폰을 사용한 고객
+      ```python
+      first_free_df = first_df[first_df['쿠폰 분류'] == '무료수강권']
+      ```
+
+    - 2회 이상 구매한 고객 중 첫구매로 기타 쿠폰을 사용한 고객
+      ```python
+      first_etc_df = first_df[first_df['쿠폰 분류'] == '기타']
+      ```
+
+    - 2회 이상 구매한 고객들 중 첫 구매에 쿠폰을 사용하지 않은 사람들
+      ```python
+      first_no_coupon_df = first_df[first_df['쿠폰 분류'] == '-']
+      ```
+
+    ![output](https://github.com/je0nh/yd-edapj/assets/145730125/b2ddd53a-e63d-463b-8e80-b08f93540763)
+
+    ![output](https://github.com/je0nh/yd-edapj/assets/145730125/800a6c25-9e36-473f-8d75-ff41f2d37a50)
+
+    ![output](https://github.com/je0nh/yd-edapj/assets/145730125/68d28ca0-f456-4f58-93fc-77e1eb93e0e3)
+
+  - 재구매 고객 중 `첫 구매에서 쿠폰을 사용한 사람`과 `사용하지 않은 사람`들이 받은 __총 할인금액 대비 총 실거래 금액 비율__ 확인
+    - 고객들이 첫 구매에 쿠폰을 사용한 경우와 사용하지 않은 경우의 `최초의 구매경험`은 `재구매에도 영향`이 있지 않을까?
+      ```python
+      first_df = pd.read_csv('./data/고객 id별 첫번째 구매.csv')
+      
+      df['판매금액'] = df['실거래금액'] + df['쿠폰할인액']
+      
+      used_coup = first_df[first_df['쿠폰유무'] == 1]
+      nused_coup = first_df[first_df['쿠폰유무'] == 0]
+      
+      used_id = used_coup['고객id'].tolist()
+      nused_id = nused_coup['고객id'].tolist()
+
+      # 첫 구매에 쿠폰을 사용한 사람
+      total_list = []
+      
+      for i in used_id:
+          if df[df['고객id'] == i]['쿠폰할인액'].sum() != 0:
+              a = df[df['고객id'] == i]['판매금액'].sum() / df[df['고객id'] == i]['쿠폰할인액'].sum()
+              total_list.append(a)
+          else:
+              total_list.append(0)
+
+      format(sum(total_list) / len(total_list), '.2%')
+
+      # 첫 구매에 쿠폰을 사용하지 않은 사람
+      total_list = []
+      
+      for i in nused_id:
+          if df[df['고객id'] == i]['쿠폰할인액'].sum() != 0:
+              a = df[df['고객id'] == i]['판매금액'].sum() / df[df['고객id'] == i]['쿠폰할인액'].sum()
+              total_list.append(a)
+          else:
+              total_list.append(0)
+
+      format(sum(total_list) / len(total_list), '.2%')
+      ```
 
 
