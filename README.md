@@ -42,4 +42,60 @@
       filtered_data = df[df['쿠폰이름'].str.contains('|'.join(keywords))]
       df = df.drop(filtered_data.index)
       ```
-      
+
+# EDA
+- 진행과정
+  1. 거래금액 등 가격 정보간의 상관관계 분석
+  2. 카테고리에 따른 판매량 조사 및 분석
+  3. 가격대별 강의 분류 및 상관관계 분석
+  4. 거래 일자에 따른 판매량 조사 및 상관관계 분석
+  5. 고객에 따른 구매 행동 분석
+  6. 쿠폰 종류별 분류 및 구매 내역간의 상관관계 분석
+
+1. 거래금액 등 가격 정보간의 상관관계 분석
+   - 판매가격, 쿠폰할인액, 거래금액 간 상관관계 분석
+     ```python
+     # 카테고리를 기준으로 판매가격, 거래금액, 쿠폰할인액 추출
+  
+     # '거래일자'의 월을 추출해서 '월' 컬럼 생성
+     df['월'] = df['거래일자'].dt.month 
+     df_category = pd.pivot_table(data = df,
+                                   index = ['카테고리', '월'],
+                                   values = ['거래금액', '판매가격','쿠폰할인액']).astype(int)
+  
+     # 거래금액, 쿠폰할인액 판매가격 간의 상관관계 분석
+     df_category_corr = df_category.corr(numeric_only=True)
+  
+     # 관계 분석한 자료를 기준으로 heatmap 그래프를 통해 시각화
+     sns.heatmap(data = df_category_corr, annot = True, cmap='Blues')
+     ```
+     <img width="250" alt="Screenshot 2024-04-11 at 6 48 55 PM" src="https://github.com/je0nh/yd-edapj/assets/145730125/48f352bb-3ea6-4024-84a8-ea5ca02db179">
+     
+     ![output](https://github.com/je0nh/yd-edapj/assets/145730125/9812cfb1-ef85-46ec-9612-0d91009fb888)
+
+   - 판매량과 할인율의 상관관계 분석
+     ```python
+     # 카테고리별 월별 강의 판매수를 작성
+     sell_to_category = df.groupby(['카테고리', '월']).size().reset_index(name = '판매량')
+     df_category = pd.pivot_table(data = df,
+                             index = ['카테고리','월'],
+                             values = ['판매가격','쿠폰할인액'])
+     df_category['할인율'] = (df_category['쿠폰할인액'] / df_category['판매가격']) * 100
+
+     # 판매가격 대비 쿠폰 할인액 비율
+     discount_to_category = pd.pivot_table(data = df_category, index = (['카테고리', '월']), values='할인율').reset_index()
+
+     # 할인율 pivot과 판매량 pivot merge
+     merge_to_sd = pd.merge(sell_to_category, discount_to_category)
+
+     # 할인율과 판매량간의 관계 분석
+     merge_to_sd_corr = merge_to_sd.corr(numeric_only = True)
+
+     # heatmap을 통한 할인율, 판매량간 관계 시각화
+     sns.heatmap(data = merge_to_sd_corr, annot = True, cmap = 'Blues')
+     ```
+     ![output](https://github.com/je0nh/yd-edapj/assets/145730125/6fa6d202-4889-417b-8d68-92b919e1da4b)
+
+     
+
+
